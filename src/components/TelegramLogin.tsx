@@ -37,7 +37,7 @@ export default function TelegramLogin({ botUsername }: TelegramLoginProps) {
     script.dataset.radius = "20";
     script.dataset.requestAccess = "write";
     // Явно используем указанный редирект URL (Vercel)
-    script.dataset.authUrl = "https://radix-ui-generator.vercel.app/";
+    script.dataset.authUrl = "https://goodvibelive.vercel.app/";
     const container = document.getElementById("tg-login-container");
     container?.appendChild(script);
 

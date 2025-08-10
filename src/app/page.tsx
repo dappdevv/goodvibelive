@@ -109,7 +109,7 @@ export default function Home() {
       setWelcomeOpen(true);
     } else {
       // Если не внутри Телеграм — предлагаем открыть бота для запуска Mini App
-      const bot = TG_BOT || "goodvibedevbot";
+      const bot = TG_BOT || "goodvibelivebot";
       window.open(`https://t.me/${bot}?startapp=webapp`, "_blank");
     }
   }
