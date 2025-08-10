@@ -1,0 +1,153 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0a0a0a;
+  --foreground: #e6e6e6;
+  --neon-1: #00f6ff;
+  --neon-2: #6c3bff;
+  --neon-3: #ff00e5;
+  --neon-4: #00ff85;
+  --card: #101014;
+  --border: #242432;
+
+  /* Переменные для настройки неонового цвета */
+  --neon-primary: hsl(200, 80%, 60%);
+  --neon-dark: hsl(200, 80%, 40%);
+  --neon-light: hsl(200, 80%, 70%);
+  --bg-gradient-from: hsl(200, 40%, 5%);
+  --bg-gradient-to: hsl(260, 30%, 8%);
+
+  /* Фиксированный неоново-пурпурный цвет */
+  --neon-purple: #b100ff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html,
+body,
+#__next {
+  height: 100%;
+}
+
+body {
+  background: radial-gradient(
+      1000px 600px at 10% 10%,
+      color-mix(in oklab, var(--neon-primary) 8%, var(--bg-gradient-from)),
+      transparent
+    ),
+    radial-gradient(
+      800px 500px at 90% 20%,
+      color-mix(in oklab, var(--neon-primary) 10%, var(--bg-gradient-to)),
+      transparent
+    ),
+    radial-gradient(
+      900px 500px at 50% 100%,
+      color-mix(in oklab, var(--neon-light) 12%, transparent),
+      transparent
+    ),
+    linear-gradient(135deg, var(--bg-gradient-from), var(--bg-gradient-to)),
+    var(--background);
+  color: var(--foreground);
+  transition: background 0.3s ease-out;
+}
+
+.neon-gradient-animated {
+  position: fixed;
+  inset: -20% -20% -20% -20%;
+  z-index: -1;
+  filter: blur(60px) saturate(120%);
+  background: conic-gradient(
+    from 0deg,
+    var(--neon-1),
+    var(--neon-2),
+    var(--neon-3),
+    var(--neon-4),
+    var(--neon-1)
+  );
+  opacity: 0.25;
+  animation: spin 18s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+.glass-card {
+  background: linear-gradient(
+    to bottom right,
+    color-mix(in oklab, var(--card) 86%, transparent),
+    color-mix(in oklab, var(--card) 92%, transparent)
+  );
+  border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+  box-shadow: 0 2px 30px
+      color-mix(in oklab, var(--neon-primary) 6%, transparent),
+    inset 0 0 0 1px color-mix(in oklab, var(--neon-primary) 3%, transparent);
+  border-radius: 16px;
+  transition: box-shadow 0.3s ease-out;
+}
+
+.neon-text {
+  text-shadow: 0 0 10px
+      color-mix(in oklab, var(--neon-primary) 40%, transparent),
+    0 0 30px color-mix(in oklab, var(--neon-primary) 30%, transparent);
+  transition: text-shadow 0.3s ease-out;
+}
+
+.btn-primary {
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--neon-primary) 50%, #000),
+    color-mix(in oklab, var(--neon-light) 50%, #000)
+  );
+  color: white;
+  border: 1px solid color-mix(in oklab, var(--neon-primary) 60%, transparent);
+  transition: all 0.3s ease-out;
+}
+.btn-primary:hover {
+  filter: brightness(1.08) saturate(1.2);
+}
+
+/* Dropdown: неоново-пурпурная тема */
+.neon-purple-trigger {
+  background: color-mix(in oklab, var(--neon-purple) 20%, #000);
+  color: white;
+  border: 1px solid color-mix(in oklab, var(--neon-purple) 60%, transparent);
+  box-shadow: 0 0 14px color-mix(in oklab, var(--neon-purple) 40%, transparent),
+    inset 0 0 0 1px color-mix(in oklab, var(--neon-purple) 20%, transparent);
+  transition: filter 0.2s ease-out, box-shadow 0.2s ease-out;
+}
+.neon-purple-trigger:hover {
+  filter: brightness(1.1) saturate(1.2);
+  box-shadow: 0 0 22px color-mix(in oklab, var(--neon-purple) 55%, transparent),
+    inset 0 0 0 1px color-mix(in oklab, var(--neon-purple) 30%, transparent);
+}
+
+.neon-purple-content {
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--card) 85%, transparent),
+    color-mix(in oklab, var(--card) 92%, transparent)
+  );
+  border: 1px solid color-mix(in oklab, var(--neon-purple) 55%, var(--border));
+  box-shadow: 0 8px 30px
+      color-mix(in oklab, var(--neon-purple) 35%, transparent),
+    0 2px 0 color-mix(in oklab, #000 70%, transparent);
+}
+
+.dropdown-item {
+  display: block;
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: white;
+}
+.dropdown-item[data-highlighted],
+.dropdown-item:hover {
+  background: color-mix(in oklab, var(--neon-purple) 25%, transparent);
+}

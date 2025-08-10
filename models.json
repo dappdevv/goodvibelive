@@ -1,0 +1,98 @@
+{
+  "models": [
+    {
+      "name": "qwen-flash",
+      "provider": "dashscope",
+      "tags": ["text"],
+      "description": "The fastest and most cost-efficient model in the Qwen family, ideal for lightweight tasks. Qwen Flash uses a flexible, tiered pricing structure for more economical billing."
+    },
+    {
+      "name": "openai/gpt-oss-20b:free",
+      "provider": "openrouter",
+      "tags": ["text"],
+      "description": "OpenRouter free model (OpenAI GPT-OSS-20B). Use OpenRouter baseURL and API key.",
+      "request_options": {
+        "model": "openai/gpt-oss-20b:free"
+      }
+    },
+    {
+      "name": "qwen-turbo",
+      "provider": "dashscope",
+      "tags": ["text"],
+      "description": "Qwen-Turbo will no longer receive updates. We recommend Qwen-Flash instead, which features a flexible, tiered pricing model for more cost-effective billing."
+    },
+    {
+      "name": "qwen-vl-plus",
+      "provider": "dashscope",
+      "tags": ["text", "image"],
+      "description": "Qwen-VL is a text generation model that can understand and process images. The model performs OCR operations and provides further functionalities, such as summarizing and reasoning. For example, it can extract product attributes from photos, and solving problems from images."
+    },
+    {
+      "name": "qwen3-coder-plus",
+      "provider": "dashscope",
+      "tags": ["text", "code"],
+      "description": "The coder model of the Qwen series. The latest Qwen3-Coder series is based on Qwen3, boasting strong coding agent capability. It possesses powerful coding agent capabilities, excels in tool calling and environment interaction, and is capable of autonomous programming. While demonstrating exceptional coding abilities, it also maintains strong general-purpose capabilities."
+    },
+    {
+      "name": "qwen3-coder-flash",
+      "provider": "dashscope",
+      "tags": ["text", "code"],
+      "description": "The coder model of the Qwen series. The latest Qwen3-Coder series is based on Qwen3, boasting strong coding agent capability. It possesses powerful coding agent capabilities, excels in tool calling and environment interaction, and is capable of autonomous programming. While demonstrating exceptional coding abilities, it also maintains strong general-purpose capabilities."
+    },
+    {
+      "name": "qwen-tts",
+      "provider": "dashscope",
+      "tags": ["text", "audio", "tts"],
+      "url": "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
+      "request_options": {
+        "model": "qwen-tts-latest",
+        "text": "",
+        "voice": "Cherry",
+        "stream": false
+      },
+      "description": "Qwen-TTS: синтез речи по тексту. Поддерживает Chinese/English, голоса Cherry/Serena/Ethan/Chelsie (+ Dylan/Jada/Sunny для latest). Потоковый вывод через X-DashScope-SSE. См. офиц. доки."
+    },
+    {
+      "name": "wan2.2-t2i-flash",
+      "tags": ["text", "image", "text-to-image"],
+      "url": "https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis",
+      "result_url": "https://dashscope-intl.aliyuncs.com/api/v1/tasks/{task_id}",
+      "request_options": {
+        "model": "wan2.2-t2i-flash",
+        "input": {
+          "prompt": "",
+          "negative_prompt": ""
+        },
+        "parameters": {
+          "size": "1024*1024",
+          "n": 4,
+          "prompt_extend": true,
+          "watermark": false,
+          "seed": 42
+        }
+      },
+      "description": "It is fully upgraded in terms of creativity, stability, and realistic texture, with fast generation speed and high cost-effectiveness."
+    },
+    {
+      "name": "wan2.2-t2i-plus",
+      "tags": ["text", "image", "text-to-image"],
+      "url": "https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis",
+      "result_url": "https://dashscope-intl.aliyuncs.com/api/v1/tasks/{task_id}",
+      "request_options": {
+        "model": "wan2.2-t2i-plus",
+        "input": {
+          "prompt": "",
+          "negative_prompt": ""
+        },
+        "parameters": {
+          "size": "1024*1024",
+          "n": 4,
+          "prompt_extend": true,
+          "watermark": false,
+          "seed": 42
+        }
+      },
+      "description": "It is fully upgraded in terms of creativity, stability, and realistic texture, generating rich details."
+    }
+  ]
+}
