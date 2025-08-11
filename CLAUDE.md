@@ -2,108 +2,142 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## Overview
 
-Good Vibe Live is a creative platform combining AI services with cryptocurrency token economy. The application integrates AI tools (chat, image, video, music generation) with TAC blockchain and Telegram authentication.
+**Good Vibe Live** is a crypto-AI platform that combines AI content generation (chat, images, videos, music) with a token-based economy and 8-level referral system. The platform uses Telegram OAuth for authentication and TAC blockchain for crypto wallet integration.
+
+## Tech Stack
+
+- **Frontend**: Next.js 15.4.6, React 19.1.0, TypeScript
+- **UI**: Radix UI + Tailwind CSS (neon theme)
+- **State**: Zustand with persistence middleware
+- **Auth**: Telegram OAuth + Supabase Auth
+- **Backend**: Next.js API routes (serverless)
+- **Database**: Supabase (PostgreSQL)
+- **AI Services**: OpenAI, Suno API, Flux via CometAPI/Replicate
+- **Blockchain**: TAC network, TON Connect
+- **DevOps**: Vercel deployment, Turbo monorepo
+
+## Architecture
+
+```
+goodvibelive/
+├── src/
+│   ├── app/                    # Next.js app directory
+│   │   ├── api/               # API routes
+│   │   │   ├── chat/          # OpenAI integration
+│   │   │   ├── telegram/      # Telegram webhook handlers
+│   │   │   ├── suno/          # Suno API integration
+│   │   │   └── t2i/           # Flux/CometAPI integration
+│   │   ├── dashboard/         # Admin panel
+│   │   ├── profile/           # User profile pages
+│   │   └── suno/              # Suno music generation
+│   ├── components/            # React components
+│   ├── store/                 # Zustand global state
+│   └── lib/                   # Utilities
+├── docs/                      # Documentation
+└── integrations/              # API documentation
+```
+
+## Key Features
+
+- **Telegram Auth**: Single sign-on via Telegram OAuth + WebApp integration
+- **AI Services**: Multi-provider support (OpenAI, Suno, Flux, Midjourney, Veo3)
+- **Token Economy**: Good Vibe tokens as platform currency
+- **Referral System**: 8-level system with automated placement
+- **Gifting System**: Token gifts linked to phone numbers
+- **Admin Panel**: Built-in dashboard for managing subscriptions, promos, and users
+- **Crypto Integration**: TAC blockchain wallet + Telegram wallet linking
 
 ## Development Commands
 
 ```bash
-# Install dependencies
-yarn install
+# Start development server
+npm run dev                # Next.js with Turbopack
 
-# Development server with Turbopack
-yarn dev
+# Build and test
+npm run build              # Production build
+npm run lint               # ESLint check
+npm run test               # Run tests (placeholder)
+npm run start              # Start production server
 
-# Production build
-yarn build
-
-# Start production server
-yarn start
-
-# Run linting
-yarn lint
+# Environment setup
+# Required env vars: OPENAI_API_KEY, TELEGRAM_BOT_TOKEN, NEXT_PUBLIC_TG_BOT
 ```
 
-## High-Level Architecture
+## Key API Patterns
 
-### Tech Stack
-- **Framework**: Next.js 15.4.6 with App Router and Turbopack
-- **Language**: TypeScript with strict mode
-- **UI Library**: Radix UI Themes + Radix UI Primitives
-- **Styling**: Tailwind CSS v4
-- **State Management**: Zustand with persistence
-- **Theme**: next-themes for dark/light mode
-- **Forms**: React Hook Form + Zod validation
-- **Database**: Supabase (planned)
-- **Authentication**: Telegram OAuth via Web App API
+### Telegram Auth Flow
+1. Users authenticate via Telegram WebApp or Login Widget
+2. Verification handled at `/api/telegram/callback`
+3. HMAC-SHA256 signature verification with Telegram bot token
 
-### Project Structure
+### AI Service Integration
+- **Chat**: OpenAI via unified interface supporting multiple providers
+- **Music**: Suno API (documented in `docs/integrations/suno/`)  
+- **Images**: Flux models via CometAPI/Replicate
 
-```
-src/
-├── app/                   # Next.js App Router pages and API routes
-│   ├── api/              # Backend API endpoints
-│   │   ├── chat/         # AI chat integration
-│   │   ├── suno/         # Music generation (Suno API)
-│   │   ├── t2i/          # Text-to-image generation
-│   │   ├── tts/          # Text-to-speech
-│   │   └── telegram/     # Telegram auth callbacks
-│   └── [pages]/          # Frontend pages (dashboard, profile, etc.)
-├── components/           # React components
-├── lib/                  # Utility functions and helpers
-└── store/               # Zustand state management
-```
+### State Management
+- **Zustand store** at `src/store/useAppStore.ts`
+- **Local persistence** with automatic sync to localStorage
+- **Type-safe interfaces** for todos, threads, user data
 
-### Key Architectural Patterns
+## Configuration
 
-1. **Client-Server Separation**: Clear boundary between client components (marked with "use client") and server components
-2. **API Routes**: All external API integrations handled through Next.js API routes in `src/app/api/`
-3. **State Persistence**: User data and chat threads persisted to localStorage via Zustand
-4. **Telegram Integration**: Telegram Web App SDK loaded globally, authentication flow through API routes
+### Environment Variables
+- `OPENAI_API_KEY`: OpenAI API access
+- `OPENROUTER_API_KEY`: OpenRouter alternative provider
+- `TELEGRAM_BOT_TOKEN`: Telegram bot authentication
+- `NEXT_PUBLIC_TG_BOT`: Public bot username for widget
+- `SITE_URL`: Base URL for OpenRouter headers
 
-### AI Service Integrations
-
-The platform integrates multiple AI services:
-- **Chat**: OpenAI GPT models via `/api/chat`
-- **Images**: Flux, Midjourney via `/api/t2i`
-- **Music**: Suno API via `/api/suno/*`
-- **Videos**: Veo3, RunWay, Sora (planned)
-
-### Token Economy (Planned)
-
-- Internal token system for AI service payments
-- 8-level referral system with specific reward percentages
-- Premium subscription tiers (FREE, SMART, PRO, DREAM)
-- TAC blockchain integration for crypto payments
-
-### Important Configuration Files
-
-- `next.config.ts`: Image domains for AI service results
-- `turbo.json`: Monorepo task configuration
-- `tsconfig.json`: TypeScript with `@/*` alias for `src/*`
+### Next.js Config
+- **Image sources**: Multiple remote patterns configured for AI service URLs
+- **ESLint**: Disabled for builds (`ignoreDuringBuilds: true`)
+- **Turbopack**: Enabled for development
 
 ## Code Conventions
 
-- Use `"use client"` directive for client-side components
-- Prefer Radix UI components over custom implementations
-- Follow existing Tailwind CSS patterns
-- Maintain TypeScript strict mode compliance
-- Store types in component files or dedicated type files
-- Use Zustand for global state, localStorage for persistence
+### TypeScript Patterns
+- Strict typing for all API routes and components
+- Zod validation for API request bodies
+- Interface-first design for state management
 
-## Security Considerations
+### Styling
+- Radix UI with Tailwind CSS
+- Neon theme with glassmorphism effects
+- Dark mode by default
+- Responsive design breakpoints
 
-- Never expose API keys in client code
-- Telegram authentication validated server-side
-- Planned: Row-level security in Supabase
-- Token transactions require signature validation
+### State Management
+- **Zustand**: Global state with persistence
+- **LocalStorage**: Client-only data (todos, threads, user)
+- **No server state**: Currently designed for PWA/mobile web
 
-## Current Development Status
+## Integration APIs
 
-The project is in early development with:
-- Basic UI structure implemented
-- Telegram authentication flow ready
-- AI service API routes configured
-- State management setup complete
-- Premium features and crypto integration pending
+### Suno API Endpoints (production)
+- Base: `https://api.sunoapi.org`
+- Features: credit tracking, music generation, lyrics, cover images, WAV conversion
+- Authentication: Bearer token in Authorization header
+
+### Flux/CometAPI Integration
+- Via Replicate backend
+- Models: flux-schnell, flux-pro, flux-kontext variants
+- Requires image generation parameters in POST body
+
+## Testing Notes
+
+- **Development login**: Test mode bypass available in UI
+- **API testing**: All routes use standard REST patterns
+- **Mobile testing**: Optimized for Telegram WebApp viewport
+- **Crypto testing**: Requires TAC blockchain setup
+
+## Future Development
+
+Architecture is designed for migration to full Supabase backend with:
+- PostgreSQL database for persistent storage
+- 8-level referral system implementation
+- Token economy with TAC blockchain integration
+- Admin panel features as described in prd.md
+- Advanced AI service orchestration
