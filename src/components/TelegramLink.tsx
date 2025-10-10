@@ -13,6 +13,7 @@ export default function TelegramLink({ onLinked }: TelegramLinkProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [showWidget, setShowWidget] = useState(false);
 
   async function linkTelegramAccount(telegramData: {
     id: number;
@@ -48,7 +49,49 @@ export default function TelegramLink({ onLinked }: TelegramLinkProps) {
       }
 
       setSuccess(true);
+      setShowWidget(false);
       if (onLinked) onLinked();
+    } catch (e) {
+      setError((e as Error).message || "Неизвестная ошибка");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Альтернативный способ через Telegram Web App
+  async function linkViaWebApp() {
+    setError(null);
+    setLoading(true);
+
+    try {
+      // Проверяем окружение Telegram Web App
+      type TGWebApp = {
+        initDataUnsafe?: { user?: any };
+        ready?: () => void;
+        expand?: () => void;
+      };
+      type TGWindow = Window & { Telegram?: { WebApp?: TGWebApp } };
+      const wa = (window as TGWindow).Telegram?.WebApp;
+      
+      if (!wa) {
+        setError("Откройте приложение внутри Telegram для привязки аккаунта");
+        return;
+      }
+
+      const waUser = wa.initDataUnsafe?.user;
+      if (!waUser || !waUser.id) {
+        setError("Не удалось получить данные пользователя из Telegram Web App");
+        return;
+      }
+
+      await linkTelegramAccount({
+        id: waUser.id,
+        username: waUser.username,
+        first_name: waUser.first_name,
+        last_name: waUser.last_name,
+        photo_url: waUser.photo_url,
+      });
+
     } catch (e) {
       setError((e as Error).message || "Неизвестная ошибка");
     } finally {
@@ -68,17 +111,25 @@ export default function TelegramLink({ onLinked }: TelegramLinkProps) {
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
         <Button 
-          onClick={() => setLoading(!loading)} 
+          onClick={() => setShowWidget(!showWidget)} 
           variant="soft" 
           color="iris"
           disabled={loading}
         >
           {loading ? "Ожидание..." : "Привязать Telegram"}
         </Button>
+        <Button 
+          onClick={linkViaWebApp} 
+          variant="soft" 
+          color="green"
+          disabled={loading}
+        >
+          {loading ? "Привязка..." : "Через Telegram App"}
+        </Button>
         {error && <Text color="red" size="2">{error}</Text>}
       </div>
       
-      {loading && (
+      {showWidget && (
         <div className="border border-[color:var(--border)] rounded-md p-3">
           <Text size="2" className="mb-2 block">Войдите через Telegram для привязки:</Text>
           <TelegramLogin 

@@ -37,11 +37,12 @@ export default function TelegramLogin({ botUsername, onSuccess }: TelegramLoginP
     script.dataset.userpic = "true";
     script.dataset.radius = "20";
     script.dataset.requestAccess = "write";
-    // Явно используем указанный редирект URL (Vercel)
-    script.dataset.authUrl = "https://goodvibelive.vercel.app/";
+    // Используем текущий домен вместо хардкода
+    script.dataset.authUrl = window.location.origin;
     
     // Добавляем обработчик успешной авторизации
     window.onTelegramAuth = (user: TelegramUserPayload) => {
+      console.log('Telegram auth success:', user);
       if (onSuccess) {
         onSuccess(user);
       } else {
@@ -51,7 +52,11 @@ export default function TelegramLogin({ botUsername, onSuccess }: TelegramLoginP
     };
     
     const container = document.getElementById("tg-login-container");
-    container?.appendChild(script);
+    if (container) {
+      // Очищаем предыдущий виджет
+      container.innerHTML = '';
+      container.appendChild(script);
+    }
 
     return () => {
       try {
