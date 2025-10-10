@@ -13,11 +13,15 @@ import {
   Text,
 } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
+import TelegramLink from "@/components/TelegramLink";
+import supabase from "@/lib/supabaseClient";
 
 export default function ProfileClient() {
   const user = useAppStore((s) => s.user);
   const reset = useAppStore((s) => s.reset);
   const [persistedAppState, setPersistedAppState] = useState<unknown>(null);
+  const [supabaseUser, setSupabaseUser] = useState<any>(null);
+  const [hasTelegramLinked, setHasTelegramLinked] = useState(false);
 
   useEffect(() => {
     try {
@@ -27,6 +31,34 @@ export default function ProfileClient() {
       setPersistedAppState(null);
     }
   }, [user]);
+
+  // Получаем данные пользователя из Supabase
+  useEffect(() => {
+    async function fetchSupabaseUser() {
+      try {
+        const { data: { user: sbUser } } = await supabase.auth.getUser();
+        setSupabaseUser(sbUser);
+        setHasTelegramLinked(Boolean(sbUser?.user_metadata?.telegram_id));
+      } catch (error) {
+        console.warn('Failed to fetch Supabase user:', error);
+      }
+    }
+    fetchSupabaseUser();
+  }, []);
+
+  const handleTelegramLinked = () => {
+    setHasTelegramLinked(true);
+    // Обновляем данные пользователя
+    async function refreshUser() {
+      try {
+        const { data: { user: sbUser } } = await supabase.auth.getUser();
+        setSupabaseUser(sbUser);
+      } catch (error) {
+        console.warn('Failed to refresh user:', error);
+      }
+    }
+    refreshUser();
+  };
 
   return (
     <Container size="3" className="py-10">
@@ -100,6 +132,32 @@ export default function ProfileClient() {
               />
             </div>
           )}
+          
+          <Separator my="4" size="4" />
+          
+          <Heading size="3" className="mb-3">
+            Привязка Telegram
+          </Heading>
+          {supabaseUser ? (
+            <div className="space-y-3">
+              {hasTelegramLinked ? (
+                <div className="flex items-center gap-2">
+                  <Text color="green" size="2">✓ Telegram привязан</Text>
+                  <Text size="2" className="text-gray-400">
+                    ID: {supabaseUser.user_metadata?.telegram_id}
+                    {supabaseUser.user_metadata?.telegram_username && 
+                      ` • @${supabaseUser.user_metadata.telegram_username}`
+                    }
+                  </Text>
+                </div>
+              ) : (
+                <TelegramLink onLinked={handleTelegramLinked} />
+              )}
+            </div>
+          ) : (
+            <Text className="text-gray-400">Войдите через Supabase для привязки Telegram</Text>
+          )}
+          
           <Separator my="4" size="4" />
           <Heading size="3" className="mb-2">
             JSON пользователя

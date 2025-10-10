@@ -6,6 +6,7 @@ import { Button } from "@radix-ui/themes";
 
 type TelegramLoginProps = {
   botUsername: string;
+  onSuccess?: (userData: TelegramUserPayload) => void;
 };
 
 declare global {
@@ -23,7 +24,7 @@ type TelegramUserPayload = {
   photo_url?: string;
 };
 
-export default function TelegramLogin({ botUsername }: TelegramLoginProps) {
+export default function TelegramLogin({ botUsername, onSuccess }: TelegramLoginProps) {
   const setUser = useAppStore((s) => s.setUser);
 
   useEffect(() => {
@@ -38,6 +39,17 @@ export default function TelegramLogin({ botUsername }: TelegramLoginProps) {
     script.dataset.requestAccess = "write";
     // Явно используем указанный редирект URL (Vercel)
     script.dataset.authUrl = "https://goodvibelive.vercel.app/";
+    
+    // Добавляем обработчик успешной авторизации
+    window.onTelegramAuth = (user: TelegramUserPayload) => {
+      if (onSuccess) {
+        onSuccess(user);
+      } else {
+        // Стандартное поведение - обновляем стор
+        setUser(user);
+      }
+    };
+    
     const container = document.getElementById("tg-login-container");
     container?.appendChild(script);
 
@@ -46,9 +58,10 @@ export default function TelegramLogin({ botUsername }: TelegramLoginProps) {
         if (container && script.parentElement === container) {
           container.removeChild(script);
         }
+        delete window.onTelegramAuth;
       } catch {}
     };
-  }, [botUsername, setUser]);
+  }, [botUsername, setUser, onSuccess]);
 
   return (
     <div className="flex flex-col items-center gap-4">
