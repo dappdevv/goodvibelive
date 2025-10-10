@@ -45,6 +45,11 @@ export default function TopDropdown() {
                 Suno
               </Link>
             </DropdownMenu.Item>
+            <DropdownMenu.Item asChild>
+              <Link href="/images" className="dropdown-item">
+                Изображения
+              </Link>
+            </DropdownMenu.Item>
             <DropdownMenu.Separator className="my-1 h-px bg-white/10" />
             <DropdownMenu.Item asChild>
               <Link href="/profile" className="dropdown-item">

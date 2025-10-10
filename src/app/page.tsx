@@ -201,8 +201,19 @@ export default function Home() {
                   variant="soft"
                   color="red"
                   onClick={async () => {
-                    await supabase.auth.signOut();
-                    reset();
+                    try {
+                      // Сначала пытаемся обновить сессию, если она есть
+                      const { data: { session } } = await supabase.auth.getSession();
+                      if (session) {
+                        await supabase.auth.signOut();
+                      }
+                    } catch (error) {
+                      console.warn('Supabase signOut failed:', error);
+                      // Игнорируем ошибки выхода из Supabase
+                    } finally {
+                      // Всегда сбрасываем локальное состояние
+                      reset();
+                    }
                   }}
                 >
                   Выйти

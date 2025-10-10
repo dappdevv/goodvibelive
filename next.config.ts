@@ -20,6 +20,16 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "file.aiquickdraw.com" },
       { protocol: "https", hostname: "sunoapi.org.redpandaai.co" },
       { protocol: "https", hostname: "api.sunoapi.org" },
+      // Добавляем домены для Midjourney и CometAPI
+      { protocol: "https", hostname: "cdn.discordapp.com" },
+      { protocol: "https", hostname: "media.discordapp.net" },
+      { protocol: "https", hostname: "*.cometapi.com" },
+      { protocol: "https", hostname: "cometapi.com" },
+      { protocol: "https", hostname: "api.cometapi.com" },
+      { protocol: "https", hostname: "*.midjourney.com" },
+      { protocol: "https", hostname: "midjourney.com" },
+      // Wildcard для любых https доменов (временно для отладки)
+      { protocol: "https", hostname: "**" },
     ],
   },
 };
