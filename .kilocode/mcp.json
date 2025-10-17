@@ -1,7 +1,24 @@
 {
   "mcpServers": {
     "supabase": {
-      "url": "https://mcp.supabase.com/mcp?project_ref=kztxahgyfxrwpcffafyu"
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--read-only",
+        "--project-ref=kztxahgyfxrwpcffafyu"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "sbp_48db35f3c377e2a5fa183aebface63f838bdd0bb"
+      }
+    },
+    "cometapi": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "apidog-mcp-server@latest",
+        "--site-id=748612"
+      ]
     }
   }
 }
