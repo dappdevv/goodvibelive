@@ -22,7 +22,7 @@ interface MediaGridProps {
   loading?: boolean;
 }
 
-export function MediaGrid({
+export default function MediaGrid({
   items,
   columns = 3,
   gap = 'md',

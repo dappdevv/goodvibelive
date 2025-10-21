@@ -5,12 +5,20 @@
       "args": [
         "-y",
         "@supabase/mcp-server-supabase@latest",
-        "--read-only",
         "--project-ref=kztxahgyfxrwpcffafyu"
       ],
       "env": {
-        "SUPABASE_ACCESS_TOKEN": "sbp_48db35f3c377e2a5fa183aebface63f838bdd0bb"
-      }
+        "SUPABASE_ACCESS_TOKEN": "sbp_da6f3707a8871596555a7f2558bbf6915f19900d"
+      },
+      "alwaysAllow": [
+        "list_tables",
+        "list_migrations",
+        "apply_migration",
+        "execute_sql",
+        "list_edge_functions",
+        "deploy_edge_function",
+        "search_docs"
+      ]
     },
     "cometapi": {
       "command": "npx",

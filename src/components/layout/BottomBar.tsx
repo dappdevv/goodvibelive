@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 
-export function BottomBar() {
+export default function BottomBar() {
   const [query, setQuery] = useState('');
   const [isListening, setIsListening] = useState(false);
 

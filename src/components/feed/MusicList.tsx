@@ -21,7 +21,7 @@ interface MusicListProps {
   onFavorite?: (trackId: string) => void;
 }
 
-export function MusicList({
+export default function MusicList({
   tracks,
   onPlay,
   onLike,
