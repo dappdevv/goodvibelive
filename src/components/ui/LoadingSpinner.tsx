@@ -1,40 +1,43 @@
+'use client';
+
 import React from 'react';
 
 interface LoadingSpinnerProps {
-  size?: 'small' | 'medium' | 'large';
-  color?: 'primary' | 'secondary' | 'accent';
-  className?: string;
+  size?: 'sm' | 'md' | 'lg';
+  color?: 'default' | 'primary' | 'secondary' | 'white';
   label?: string;
+  className?: string;
 }
 
 const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
-  size = 'medium',
-  color = 'primary',
-  className = '',
-  label
+  size = 'md',
+  color = 'default',
+  label,
+  className = ''
 }) => {
   const sizeClasses = {
-    small: 'w-4 h-4',
-    medium: 'w-8 h-8',
-    large: 'w-12 h-12'
+    sm: 'w-4 h-4',
+    md: 'w-8 h-8',
+    lg: 'w-12 h-12'
   };
 
   const colorClasses = {
-    primary: 'text-blue-500',
-    secondary: 'text-gray-500',
-    accent: 'text-purple-500'
+    default: 'border-gray-200 border-t-gray-600',
+    primary: 'border-blue-200 border-t-blue-60',
+    secondary: 'border-gray-200 border-t-gray-600',
+    white: 'border-gray-200 border-t-white'
   };
 
-  const spinnerClass = `animate-spin rounded-full border-4 border-t-transparent ${sizeClasses[size]} ${colorClasses[color]} ${className}`;
-
   return (
-    <div className="flex flex-col items-center justify-center">
-      <div className={spinnerClass} role="status" aria-label={label || "Загрузка"}>
-        <span className="sr-only">{label || "Загрузка"}</span>
-      </div>
-      {label && <span className="mt-2 text-sm text-gray-600">{label}</span>}
+    <div className={`flex flex-col items-center justify-center ${className}`}>
+      <div
+        className={`${sizeClasses[size]} ${colorClasses[color]} border-4 border-solid rounded-full animate-spin`}
+      ></div>
+      {label && (
+        <span className="mt-2 text-sm text-gray-600">{label}</span>
+      )}
     </div>
   );
 };
 
-export default LoadingSpinner;
+export { LoadingSpinner };

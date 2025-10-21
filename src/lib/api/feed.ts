@@ -1,307 +1,414 @@
-import { supabase } from './client';
-import { ApiClient } from './client';
+import { apiClient } from './client';
+import { type Post } from '../../types/supabase';
 
 // Типы для фида
-export interface FeedItem {
- id: string;
+export interface FeedPost {
+  id: string;
   user_id: string;
-  content: string;
-  type: 'post' | 'image' | 'video' | 'music';
-  url?: string;
-  thumbnail_url?: string;
+  content_type: 'image' | 'video' | 'audio' | 'text';
+  content_url: string;
   title?: string;
   description?: string;
-  created_at: string;
-  updated_at: string;
-  user: {
-    id: string;
-    name: string;
-    avatar_url: string;
-  };
+  tags?: string[];
   likes_count: number;
-  is_liked: boolean;
-  is_favorite: boolean;
+  comments_count: number;
+  created_at: string;
+  user?: {
+    id: string;
+    username: string;
+    avatar_url?: string;
+  };
+  is_liked?: boolean;
+  is_bookmarked?: boolean;
 }
 
-export interface FeedFilters {
-  type?: 'post' | 'image' | 'video' | 'music';
+export interface GetFeedParams {
   limit?: number;
   offset?: number;
+  content_type?: 'image' | 'video' | 'audio' | 'text';
+  tags?: string[];
+  user_id?: string;
 }
 
-// Класс для работы с фидом
-export class FeedClient extends ApiClient {
-  async getFeed(filters: FeedFilters = {}) {
-    let query = supabase
-      .from('feed_items')
-      .select(`
-        id, 
-        user_id, 
-        content, 
-        type, 
-        url, 
-        thumbnail_url, 
-        title, 
-        description, 
-        created_at, 
-        updated_at,
-        user:profiles(id, name, avatar_url),
-        feed_item_likes(count),
-        feed_item_user_likes:user_feed_item_likes(feed_item_id)
-      `)
-      .order('created_at', { ascending: false });
-
-    if (filters.type) {
-      query = query.eq('type', filters.type);
-    }
-
-    if (filters.limit) {
-      query = query.limit(filters.limit);
-    }
-
-    if (filters.offset) {
-      query = query.range(filters.offset, filters.offset + (filters.limit || 20) - 1);
-    }
-
-    const { data, error, count } = await query;
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    // Преобразуем данные для добавления флагов лайков и избранного
-    const feedItems = data.map(item => {
-      const feedItem: FeedItem = {
-        id: item.id,
-        user_id: item.user_id,
-        content: item.content,
-        type: item.type,
-        url: item.url,
-        thumbnail_url: item.thumbnail_url,
-        title: item.title,
-        description: item.description,
-        created_at: item.created_at,
-        updated_at: item.updated_at,
-        user: {
-          id: item.user.id,
-          name: item.user.name,
-          avatar_url: item.user.avatar_url,
-        },
-        likes_count: item.feed_item_likes?.[0]?.count || 0,
-        is_liked: item.feed_item_user_likes && item.feed_item_user_likes.length > 0,
-        is_favorite: false, // Пока не реализовано, можно добавить позже
-      };
-      return feedItem;
-    });
-
-    return { data: feedItems, count };
-  }
-
-  async getUserFeed(userId: string, filters: FeedFilters = {}) {
-    let query = supabase
-      .from('feed_items')
-      .select(`
-        id, 
-        user_id, 
-        content, 
-        type, 
-        url, 
-        thumbnail_url, 
-        title, 
-        description, 
-        created_at, 
-        updated_at,
-        user:profiles(id, name, avatar_url),
-        feed_item_likes(count),
-        feed_item_user_likes:user_feed_item_likes(feed_item_id)
-      `)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (filters.type) {
-      query = query.eq('type', filters.type);
-    }
-
-    if (filters.limit) {
-      query = query.limit(filters.limit);
-    }
-
-    if (filters.offset) {
-      query = query.range(filters.offset, filters.offset + (filters.limit || 20) - 1);
-    }
-
-    const { data, error, count } = await query;
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    const feedItems = data.map(item => {
-      const feedItem: FeedItem = {
-        id: item.id,
-        user_id: item.user_id,
-        content: item.content,
-        type: item.type,
-        url: item.url,
-        thumbnail_url: item.thumbnail_url,
-        title: item.title,
-        description: item.description,
-        created_at: item.created_at,
-        updated_at: item.updated_at,
-        user: {
-          id: item.user.id,
-          name: item.user.name,
-          avatar_url: item.user.avatar_url,
-        },
-        likes_count: item.feed_item_likes?.[0]?.count || 0,
-        is_liked: item.feed_item_user_likes && item.feed_item_user_likes.length > 0,
-        is_favorite: false,
-      };
-      return feedItem;
-    });
-
-    return { data: feedItems, count };
-  }
-
-  async toggleLike(feedItemId: string, shouldLike: boolean = true) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-
-    if (shouldLike) {
-      const { error } = await supabase
-        .from('feed_item_likes')
-        .insert({ feed_item_id: feedItemId, user_id: user.id });
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-    } else {
-      const { error } = await supabase
-        .from('feed_item_likes')
-        .delete()
-        .match({ feed_item_id: feedItemId, user_id: user.id });
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-    }
-
-    // Обновляем количество лайков
-    const { count, error: countError } = await supabase
-      .from('feed_item_likes')
-      .select('*', { count: 'exact', head: true })
-      .eq('feed_item_id', feedItemId);
-
-    if (countError) {
-      throw new Error(countError.message);
-    }
-
-    return { liked: shouldLike, likes_count: count };
-  }
-
-  async toggleFavorite(feedItemId: string, shouldFavorite: boolean = true) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-
-    // В Supabase у нас нет таблицы избранных элементов, поэтому временно возвращаем заглушку
-    // В реальном приложении нужно создать таблицу user_favorites
-    return { favorited: shouldFavorite };
-  }
-
-  async subscribeToUser(targetUserId: string) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-
-    const { error } = await supabase
-      .from('user_follows')
-      .insert({ follower_id: user.id, following_id: targetUserId });
-    
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    return { subscribed: true };
-  }
-
-  async unsubscribeFromUser(targetUserId: string) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-
-    const { error } = await supabase
-      .from('user_follows')
-      .delete()
-      .match({ follower_id: user.id, following_id: targetUserId });
-    
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    return { subscribed: false };
-  }
-
-  async isFollowing(userId: string, targetUserId: string) {
-    const { data, error } = await supabase
-      .from('user_follows')
-      .select('id')
-      .match({ follower_id: userId, following_id: targetUserId })
-      .single();
-    
-    if (error && error.code !== 'PGRST116') { // PGRST116 означает "Row not found"
-      throw new Error(error.message);
-    }
-
-    return !!data;
-  }
-
-  async getFollowers(userId: string) {
-    const { data, error } = await supabase
-      .from('user_follows')
-      .select(`
-        id,
-        follower_id,
-        profiles(id, name, avatar_url)
-      `)
-      .eq('following_id', userId);
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    return data.map(follow => ({
-      id: follow.id,
-      follower_id: follow.follower_id,
-      user: follow.profiles
-    }));
-  }
-
-  async getFollowing(userId: string) {
-    const { data, error } = await supabase
-      .from('user_follows')
-      .select(`
-        id,
-        following_id,
-        profiles(id, name, avatar_url)
-      `)
-      .eq('follower_id', userId);
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    return data.map(follow => ({
-      id: follow.id,
-      following_id: follow.following_id,
-      user: follow.profiles
-    }));
- }
+export interface LikeResponse {
+  success: boolean;
+  likes_count: number;
+  is_liked: boolean;
 }
 
-export const feedClient = new FeedClient();
+export interface BookmarkResponse {
+  success: boolean;
+  is_bookmarked: boolean;
+}
+
+// Клиент для работы с фидом
+class FeedApi {
+  // Получить фид
+  async getFeed(params: GetFeedParams = {}): Promise<{ error: Error | null; data?: FeedPost[] }> {
+    const { limit = 20, offset = 0, content_type, tags, user_id } = params;
+    
+    try {
+      let query = apiClient.getSupabase()
+        .from('posts')
+        .select(`
+          id,
+          user_id,
+          content_type,
+          content_url,
+          title,
+          description,
+          tags,
+          likes_count,
+          comments_count,
+          created_at,
+          users ( id, username, avatar_url )
+        `)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (content_type) {
+        query = query.eq('content_type', content_type);
+      }
+
+      if (tags && tags.length > 0) {
+        query = query.overlaps('tags', tags);
+      }
+
+      if (user_id) {
+        query = query.eq('user_id', user_id);
+      }
+
+      const result = await apiClient.executeRequest<FeedPost[]>(query);
+      
+      // Добавляем информацию о лайке и закладке для каждого поста
+      if (result.data) {
+        const user = await apiClient.getCurrentUser();
+        if (user) {
+          const postIds = result.data.map(post => post.id);
+          const { data: userLikes, error: likesError } = await apiClient.getSupabase()
+            .from('post_likes')
+            .select('post_id')
+            .eq('user_id', user.id)
+            .in('post_id', postIds);
+            
+          if (!likesError && userLikes) {
+            const likedPostIds = new Set(userLikes.map(like => like.post_id));
+            result.data = result.data.map(post => ({
+              ...post,
+              is_liked: likedPostIds.has(post.id)
+            }));
+          }
+          
+          const { data: userBookmarks, error: bookmarksError } = await apiClient.getSupabase()
+            .from('post_bookmarks')
+            .select('post_id')
+            .eq('user_id', user.id)
+            .in('post_id', postIds);
+            
+          if (!bookmarksError && userBookmarks) {
+            const bookmarkedPostIds = new Set(userBookmarks.map(bm => bm.post_id));
+            result.data = result.data.map(post => ({
+              ...post,
+              is_bookmarked: bookmarkedPostIds.has(post.id)
+            }));
+          }
+        }
+      }
+      
+      return result;
+    } catch (error) {
+      return apiClient.handleApiError(error);
+    }
+  }
+
+  // Получить посты пользователя
+  async getUserPosts(userId: string, params: GetFeedParams = {}): Promise<{ error: Error | null; data?: FeedPost[] }> {
+    return this.getFeed({ ...params, user_id: userId });
+  }
+
+  // Получить избранные посты пользователя
+  async getBookmarks(params: GetFeedParams = {}): Promise<{ error: Error | null; data?: FeedPost[] }> {
+    const user = await apiClient.getCurrentUser();
+    if (!user) {
+      return { error: new Error('User not authenticated') };
+    }
+
+    try {
+      const { limit = 20, offset = 0, content_type, tags } = params;
+      
+      let query = apiClient.getSupabase()
+        .from('post_bookmarks')
+        .select(`
+          post_id,
+          posts (
+            id,
+            user_id,
+            content_type,
+            content_url,
+            title,
+            description,
+            tags,
+            likes_count,
+            comments_count,
+            created_at,
+            users ( id, username, avatar_url )
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (content_type) {
+        query = query.eq('posts.content_type', content_type);
+      }
+
+      if (tags && tags.length > 0) {
+        query = query.overlaps('posts.tags', tags);
+      }
+
+      const result = await query;
+      
+      if (result.error) {
+        return apiClient.handleApiError(result.error);
+      }
+
+      // Преобразуем результат к формату FeedPost
+      const feedPosts: FeedPost[] = result.data.map(item => ({
+        ...item.posts,
+        is_bookmarked: true,
+        is_liked: false // Значение будет обновлено ниже
+      }));
+
+      // Добавляем информацию о лайках
+      const postIds = feedPosts.map(post => post.id);
+      const { data: userLikes, error: likesError } = await apiClient.getSupabase()
+        .from('post_likes')
+        .select('post_id')
+        .eq('user_id', user.id)
+        .in('post_id', postIds);
+        
+      if (!likesError && userLikes) {
+        const likedPostIds = new Set(userLikes.map(like => like.post_id));
+        return {
+          error: null,
+          data: feedPosts.map(post => ({
+            ...post,
+            is_liked: likedPostIds.has(post.id)
+          }))
+        };
+      }
+
+      return {
+        error: null,
+        data: feedPosts
+      };
+    } catch (error) {
+      return apiClient.handleApiError(error);
+    }
+  }
+
+  // Поставить/убрать лайк с поста
+  async toggleLike(postId: string): Promise<{ error: Error | null; data?: LikeResponse }> {
+    const user = await apiClient.getCurrentUser();
+    if (!user) {
+      return { error: new Error('User not authenticated') };
+    }
+
+    try {
+      // Проверяем, есть ли уже лайк
+      const { data: existingLike, error: checkError } = await apiClient.getSupabase()
+        .from('post_likes')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('post_id', postId)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 означает "Row not found"
+        return apiClient.handleApiError(checkError);
+      }
+
+      let result: any;
+      let isLiked: boolean;
+
+      if (existingLike) {
+        // Удаляем лайк
+        result = await apiClient.getSupabase()
+          .from('post_likes')
+          .delete()
+          .eq('id', existingLike.id);
+
+        isLiked = false;
+      } else {
+        // Добавляем лайк
+        result = await apiClient.getSupabase()
+          .from('post_likes')
+          .insert([{ user_id: user.id, post_id: postId }]);
+
+        isLiked = true;
+      }
+
+      if (result.error) {
+        return apiClient.handleApiError(result.error);
+      }
+
+      // Обновляем счетчик лайков
+      const { count, error: countError } = await apiClient.getSupabase()
+        .from('post_likes')
+        .select('*', { count: 'exact', head: true })
+        .eq('post_id', postId);
+
+      if (countError) {
+        return apiClient.handleApiError(countError);
+      }
+
+      return {
+        error: null,
+        data: {
+          success: true,
+          likes_count: count || 0,
+          is_liked: isLiked
+        }
+      };
+    } catch (error) {
+      return apiClient.handleApiError(error);
+    }
+  }
+
+  // Добавить/удалить пост из избранного
+  async toggleBookmark(postId: string): Promise<{ error: Error | null; data?: BookmarkResponse }> {
+    const user = await apiClient.getCurrentUser();
+    if (!user) {
+      return { error: new Error('User not authenticated') };
+    }
+
+    try {
+      // Проверяем, есть ли уже закладка
+      const { data: existingBookmark, error: checkError } = await apiClient.getSupabase()
+        .from('post_bookmarks')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('post_id', postId)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 означает "Row not found"
+        return apiClient.handleApiError(checkError);
+      }
+
+      let result: any;
+      let isBookmarked: boolean;
+
+      if (existingBookmark) {
+        // Удаляем закладку
+        result = await apiClient.getSupabase()
+          .from('post_bookmarks')
+          .delete()
+          .eq('id', existingBookmark.id);
+
+        isBookmarked = false;
+      } else {
+        // Добавляем закладку
+        result = await apiClient.getSupabase()
+          .from('post_bookmarks')
+          .insert([{ user_id: user.id, post_id: postId }]);
+
+        isBookmarked = true;
+      }
+
+      if (result.error) {
+        return apiClient.handleApiError(result.error);
+      }
+
+      return {
+        error: null,
+        data: {
+          success: true,
+          is_bookmarked: isBookmarked
+        }
+      };
+    } catch (error) {
+      return apiClient.handleApiError(error);
+    }
+  }
+
+  // Получить посты по тегам
+  async getPostsByTags(tags: string[], params: GetFeedParams = {}): Promise<{ error: Error | null; data?: FeedPost[] }> {
+    return this.getFeed({ ...params, tags });
+  }
+
+  // Получить рекомендованные посты
+  async getRecommendedPosts(params: GetFeedParams = {}): Promise<{ error: Error | null; data?: FeedPost[] }> {
+    // Для простоты возвращаем посты по популярности
+    // В реальном приложении можно использовать более сложную логику рекомендаций
+    try {
+      let query = apiClient.getSupabase()
+        .from('posts')
+        .select(`
+          id,
+          user_id,
+          content_type,
+          content_url,
+          title,
+          description,
+          tags,
+          likes_count,
+          comments_count,
+          created_at,
+          users ( id, username, avatar_url )
+        `)
+        .order('likes_count', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      const { limit = 20, offset = 0, content_type } = params;
+
+      query = query.range(offset, offset + limit - 1);
+
+      if (content_type) {
+        query = query.eq('content_type', content_type);
+      }
+
+      const result = await apiClient.executeRequest<FeedPost[]>(query);
+      
+      // Добавляем информацию о лайке и закладке для каждого поста
+      if (result.data) {
+        const user = await apiClient.getCurrentUser();
+        if (user) {
+          const postIds = result.data.map(post => post.id);
+          const { data: userLikes, error: likesError } = await apiClient.getSupabase()
+            .from('post_likes')
+            .select('post_id')
+            .eq('user_id', user.id)
+            .in('post_id', postIds);
+            
+          if (!likesError && userLikes) {
+            const likedPostIds = new Set(userLikes.map(like => like.post_id));
+            result.data = result.data.map(post => ({
+              ...post,
+              is_liked: likedPostIds.has(post.id)
+            }));
+          }
+          
+          const { data: userBookmarks, error: bookmarksError } = await apiClient.getSupabase()
+            .from('post_bookmarks')
+            .select('post_id')
+            .eq('user_id', user.id)
+            .in('post_id', postIds);
+            
+          if (!bookmarksError && userBookmarks) {
+            const bookmarkedPostIds = new Set(userBookmarks.map(bm => bm.post_id));
+            result.data = result.data.map(post => ({
+              ...post,
+              is_bookmarked: bookmarkedPostIds.has(post.id)
+            }));
+          }
+        }
+      }
+      
+      return result;
+    } catch (error) {
+      return apiClient.handleApiError(error);
+    }
+  }
+}
+
+// Экземпляр API клиента для фида
+export const feedApi = new FeedApi();

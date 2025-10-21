@@ -1,90 +1,64 @@
-import React, { useEffect } from 'react';
+'use client';
+
+import React from 'react';
 import { Button } from './Button';
 
 interface TelegramLoginProps {
-  botUsername: string;
- onSuccess?: (userData: TelegramUserPayload) => void;
-  onError?: (error: string) => void;
-  size?: 'small' | 'large';
-  requestAccess?: 'read' | 'write';
-}
-
-type TelegramUserPayload = {
-  id: number;
-  first_name?: string;
-  last_name?: string;
-  username?: string;
-  photo_url?: string;
-  auth_date: number;
-  hash: string;
-};
-
-declare global {
-  interface Window {
-    Telegram?: unknown;
-    onTelegramAuth?: (user: TelegramUserPayload) => void;
-  }
+  onLogin: () => void;
+  disabled?: boolean;
+  size?: 'sm' | 'md' | 'lg';
+  variant?: 'default' | 'outline';
 }
 
 const TelegramLogin: React.FC<TelegramLoginProps> = ({
-  botUsername,
-  onSuccess,
-  onError,
-  size = 'large',
-  requestAccess = 'write'
+  onLogin,
+  disabled = false,
+ size = 'md',
+  variant = 'default'
 }) => {
-  useEffect(() => {
-    // Удаляем предыдущий скрипт, если он был
-    const existingScript = document.querySelector('script[data-telegram-login]');
-    if (existingScript) {
-      existingScript.remove();
+  const sizeClasses = {
+    sm: 'text-sm px-3 py-1.5',
+    md: 'text-base px-4 py-2',
+    lg: 'text-lg px-6 py-3'
+  };
+
+  const handleClick = () => {
+    if (!disabled) {
+      onLogin();
     }
+  };
 
-    // Telegram Login Widget
-    const script = document.createElement('script');
-    script.src = 'https://telegram.org/js/telegram-widget.js?22';
-    script.async = true;
-    script.dataset.telegramLogin = botUsername;
-    script.dataset.size = size;
-    script.dataset.userpic = 'true';
-    script.dataset.requestAccess = requestAccess;
-    script.dataset.authUrl = `${window.location.origin}/api/telegram/callback`;
-    
-    // Обработчик успешной авторизации
-    window.onTelegramAuth = (user: TelegramUserPayload) => {
-      if (onSuccess) {
-        onSuccess(user);
-      }
-    };
-    
-    const container = document.getElementById('tg-login-container');
-    if (container) {
-      container.appendChild(script);
-    }
-
-    // Очистка при размонтировании
-    return () => {
-      try {
-        if (container && script.parentElement === container) {
-          container.removeChild(script);
-        }
-        delete window.onTelegramAuth;
-      } catch (e) {
-        if (onError) {
-          onError('Ошибка при очистке виджета Telegram Login');
-        }
-      }
-    };
-  }, [botUsername, onSuccess, onError, size, requestAccess]);
-
-  return (
-    <div className="flex flex-col items-center">
-      <div id="tg-login-container" />
-      <div className="text-xs text-gray-500 mt-2 text-center">
-        Авторизуйтесь через Telegram
-      </div>
-    </div>
+ return (
+    <Button
+      onClick={handleClick}
+      disabled={disabled}
+      className={`w-full flex items-center justify-center space-x-2 ${sizeClasses[size]}`}
+      variant={variant}
+      style={{
+        background: 'linear-gradient(45deg, #2AABEE, #229ED9)',
+        border: 'none'
+      }}
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="flex-shrink-0"
+      >
+        <path
+          d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z"
+          fill="white"
+        />
+        <path
+          d="M17.9 11.8L8.4 7.5C8.1 7.4 7.8 7.5 7.7 7.8L6 14L9.8 11.5L14.8 14.9C15.1 15.1 15.4 15 15.5 14.7L17.2 12.1C17.3 12 17.9 11.8 17.9 11.8Z"
+          fill="#2AABEE"
+        />
+      </svg>
+      <span>Войти через Telegram</span>
+    </Button>
   );
 };
 
-export { TelegramLogin, TelegramUserPayload };
+export { TelegramLogin };

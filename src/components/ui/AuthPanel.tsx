@@ -1,15 +1,19 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Card } from './Card';
 import { Button } from './Button';
 import { Input } from './Input';
-import { TelegramLogin } from '../TelegramLogin';
+import { TelegramLogin } from './TelegramLogin';
+import { Badge } from './Badge';
 
 interface AuthPanelProps {
   onLogin?: (credentials: { email: string; password: string }) => void;
-  onRegister?: (credentials: { email: string; password: string }) => void;
- onSocialLogin?: (provider: string) => void;
+  onRegister?: (credentials: { email: string; password: string; name: string }) => void;
+ onSocialLogin?: (provider: 'telegram' | 'google' | 'facebook') => void;
   mode?: 'login' | 'register';
-  onModeChange?: (mode: 'login' | 'register') => void;
+  title?: string;
+  description?: string;
 }
 
 const AuthPanel: React.FC<AuthPanelProps> = ({
@@ -17,102 +21,176 @@ const AuthPanel: React.FC<AuthPanelProps> = ({
   onRegister,
   onSocialLogin,
   mode = 'login',
-  onModeChange
+  title = mode === 'login' ? 'Вход в аккаунт' : 'Регистрация',
+  description = mode === 'login' ? 'Введите свои данные для входа' : 'Создайте новый аккаунт'
 }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [currentMode, setCurrentMode] = useState<'login' | 'register'>(mode);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    name: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    if (error) setError(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (mode === 'register' && password !== confirmPassword) {
-      alert('Пароли не совпадают');
-      return;
-    }
+    setLoading(true);
+    setError(null);
 
-    const credentials = { email, password };
-    
-    if (mode === 'login' && onLogin) {
-      onLogin(credentials);
-    } else if (mode === 'register' && onRegister) {
-      onRegister(credentials);
+    try {
+      if (currentMode === 'login') {
+        if (onLogin) {
+          await onLogin({
+            email: formData.email,
+            password: formData.password
+          });
+        }
+      } else {
+        if (onRegister) {
+          await onRegister({
+            email: formData.email,
+            password: formData.password,
+            name: formData.name
+          });
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Произошла ошибка при аутентификации');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const switchMode = () => {
+    setCurrentMode(currentMode === 'login' ? 'register' : 'login');
+    setError(null);
   };
 
   return (
     <Card className="w-full max-w-md mx-auto">
       <div className="p-6">
-        <h2 className="text-2xl font-bold text-center mb-6">
-          {mode === 'login' ? 'Вход в аккаунт' : 'Регистрация'}
-        </h2>
-        
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+          <p className="text-gray-600 mt-2">{description}</p>
+        </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {currentMode === 'register' && (
+            <div>
+              <Input
+                type="text"
+                name="name"
+                placeholder="Ваше имя"
+                value={formData.name}
+                onChange={handleChange}
+                required
+                disabled={loading}
+              />
+            </div>
+          )}
+
+          <div>
             <Input
               type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              name="email"
+              placeholder="Электронная почта"
+              value={formData.email}
+              onChange={handleChange}
               required
+              disabled={loading}
             />
-            
+          </div>
+
+          <div>
             <Input
               type="password"
+              name="password"
               placeholder="Пароль"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={formData.password}
+              onChange={handleChange}
               required
+              minLength={6}
+              disabled={loading}
             />
-            
-            {mode === 'register' && (
-              <Input
-                type="password"
-                placeholder="Подтверждение пароля"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
+          </div>
+
+          {currentMode === 'login' && (
+            <div className="text-right">
+              <a href="#" className="text-sm text-blue-600 hover:underline">
+                Забыли пароль?
+              </a>
+            </div>
+          )}
+
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={loading}
+          >
+            {loading ? (
+              <div className="flex items-center justify-center">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                {currentMode === 'login' ? 'Вход...' : 'Регистрация...'}
+              </div>
+            ) : (
+              currentMode === 'login' ? 'Войти' : 'Зарегистрироваться'
             )}
-            
-            <Button type="submit" className="w-full">
-              {mode === 'login' ? 'Войти' : 'Зарегистрироваться'}
-            </Button>
-          </div>
+          </Button>
         </form>
-        
-        {onModeChange && (
-          <div className="mt-4 text-center">
-            <button
-              type="button"
-              className="text-blue-600 hover:underline"
-              onClick={() => onModeChange(mode === 'login' ? 'register' : 'login')}
-            >
-              {mode === 'login'
-                ? 'Нет аккаунта? Зарегистрироваться'
-                : 'Уже есть аккаунт? Войти'}
-            </button>
-          </div>
-        )}
-        
-        {onSocialLogin && (
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">или</span>
-              </div>
-            
-            <div className="mt-6 grid grid-cols-1 gap-3">
-              <TelegramLogin />
+
+        <div className="mt-6">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">или</span>
             </div>
           </div>
-        )}
+
+          <div className="mt-6 space-y-3">
+            <TelegramLogin 
+              onLogin={() => onSocialLogin?.('telegram')}
+              disabled={loading}
+            />
+            
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                {currentMode === 'login' 
+                  ? 'Нет аккаунта?' 
+                  : 'Уже есть аккаунт?'}
+              </div>
+              <Button
+                type="button"
+                variant="link"
+                onClick={switchMode}
+                disabled={loading}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                {currentMode === 'login' ? 'Регистрация' : 'Вход'}
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     </Card>
   );
 };
 
-export default AuthPanel;
+export { AuthPanel };

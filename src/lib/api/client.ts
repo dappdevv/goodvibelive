@@ -1,123 +1,67 @@
-import { createClient } from '@supabase/supabase-js';
-import { Database } from '../../types/supabase';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { type Database } from '../../types/supabase';
 
-// Инициализация Supabase клиента
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+// Тип для экземпляра Supabase клиента
+export type SupabaseInstance = SupabaseClient<Database>;
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+// Базовый API клиент с инициализацией Supabase
+class ApiClient {
+  private supabase: SupabaseInstance;
 
-// Типы для аутентификации
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
+  constructor() {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export interface RegisterData {
-  email: string;
-  password: string;
-  name: string;
-}
-
-// Базовый класс для API клиентов
-export class ApiClient {
-  protected async handleResponse<T>(response: { data: T | null; error: any }): Promise<T> {
-    if (response.error) {
-      throw new Error(response.error.message || 'An error occurred');
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error('Missing Supabase environment variables');
     }
-    return response.data as T;
+
+    this.supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
   }
 
-  protected async handleResponseWithCount<T>(response: { data: T | null; count: number | null; error: any }): Promise<{ data: T; count: number | null }> {
-    if (response.error) {
-      throw new Error(response.error.message || 'An error occurred');
-    }
-    return { data: response.data as T, count: response.count };
+  // Получить экземпляр Supabase клиента
+  getSupabase(): SupabaseInstance {
+    return this.supabase;
   }
-}
 
-// Класс для аутентификации
-export class AuthClient extends ApiClient {
-  async login(credentials: LoginCredentials) {
-    const { email, password } = credentials;
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
+  // Обработка ошибок API
+  handleApiError(error: any): { error: Error | null; data?: any } {
     if (error) {
-      throw new Error(error.message);
+      console.error('API Error:', error);
+      return { error: new Error(error.message || 'An error occurred') };
     }
-    
-    return data;
+    return { error: null };
   }
 
- async register(userData: RegisterData) {
-    const { email, password, name } = userData;
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name,
-        },
-      },
-    });
-    
-    if (error) {
-      throw new Error(error.message);
+  // Метод для выполнения запросов с обработкой ошибок
+  async executeRequest<T>(request: Promise<any>): Promise<{ error: Error | null; data?: T }> {
+    try {
+      const response = await request;
+      
+      // Проверяем, является ли ответ объектом с полем error
+      if (response.error) {
+        return this.handleApiError(response.error);
+      }
+      
+      // Если ошибки нет, возвращаем данные
+      return { error: null, data: response.data || response };
+    } catch (error) {
+      return this.handleApiError(error);
     }
-    
-    return data;
-  }
-
-  async logout() {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      throw new Error(error.message);
-    }
-  }
-
-  async getCurrentUser() {
-    const { data: { user }, error } = await supabase.auth.getUser();
-    
-    if (error) {
-      throw new Error(error.message);
-    }
-    
-    return user;
-  }
-
-  async updateProfile(userId: string, profileData: Partial<{ name: string; avatar_url: string; bio: string }>) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .update(profileData)
-      .eq('id', userId)
-      .select()
-      .single();
-    
-    return this.handleResponse(data ? { data } : { data: null, error });
-  }
-
-  async forgotPassword(email: string) {
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
-    
-    if (error) {
-      throw new Error(error.message);
-    }
-  }
-
-  async updatePassword(newPassword: string) {
-    const { data, error } = await supabase.auth.updateUser({
-      password: newPassword,
-    });
-    
-    if (error) {
-      throw new Error(error.message);
-    }
-    
-    return data;
   }
 }
 
-export const authClient = new AuthClient();
+// Экземпляр API клиента
+export const apiClient = new ApiClient();
+
+// Функция для получения текущего пользователя
+export const getCurrentUser = async () => {
+  const { data: { user } } = await apiClient.getSupabase().auth.getUser();
+  return user;
+};
+
+// Функция для проверки аутентификации
+export const isAuthenticated = async (): Promise<boolean> => {
+  const user = await getCurrentUser();
+  return user !== null;
+};
