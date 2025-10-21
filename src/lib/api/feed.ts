@@ -8,8 +8,8 @@ export interface FeedPost {
   content_type: 'image' | 'video' | 'audio' | 'text';
   content_url: string;
   title?: string;
-  description?: string;
-  tags?: string[];
+ description?: string;
+ tags?: string[];
   likes_count: number;
   comments_count: number;
   created_at: string;
@@ -21,6 +21,9 @@ export interface FeedPost {
   is_liked?: boolean;
   is_bookmarked?: boolean;
 }
+
+// Экспортируем FeedItem как альтернативное имя для FeedPost
+export type FeedItem = FeedPost;
 
 export interface GetFeedParams {
   limit?: number;
@@ -412,3 +415,6 @@ class FeedApi {
 
 // Экземпляр API клиента для фида
 export const feedApi = new FeedApi();
+
+// Экспортируем feedClient как альтернативное имя для feedApi
+export const feedClient = feedApi;

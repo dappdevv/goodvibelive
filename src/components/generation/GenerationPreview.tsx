@@ -6,18 +6,20 @@ import { Badge } from '../ui/Badge';
 import { PlayButton } from '../ui/PlayButton';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
+import { generationApi } from '../../lib/api/generation';
+import { apiClient } from '../../lib/api/client';
 
 interface GenerationPreviewProps {
   id: string;
   title: string;
-  description: string;
-  type: 'image' | 'music' | 'video' | 'text';
+ description: string;
+ type: 'image' | 'music' | 'video' | 'text';
   thumbnail: string;
   creator: {
     id: string;
     name: string;
     avatar: string;
-  };
+ };
   status: 'pending' | 'processing' | 'completed' | 'failed';
   progress?: number;
   onPlay?: () => void;
@@ -35,10 +37,13 @@ const GenerationPreview: React.FC<GenerationPreviewProps> = ({
   status,
   progress = 0,
   onPlay,
-  onRetry,
+ onRetry,
   onCancel
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const getTypeColor = () => {
     switch (type) {
@@ -67,6 +72,48 @@ const GenerationPreview: React.FC<GenerationPreviewProps> = ({
       case 'completed': return 'Завершено';
       case 'failed': return 'Ошибка';
       default: return '';
+    }
+  };
+
+  const handleLike = async () => {
+    setLoading(true);
+    try {
+      // Здесь будет вызов API для лайка
+      const result = await apiClient.getSupabase()
+        .from('generation_likes')
+        .upsert({
+          generation_id: id,
+          user_id: (await apiClient.getCurrentUser())?.id,
+          liked: !isLiked
+        }, { onConflict: 'generation_id,user_id' });
+
+      if (result.error) throw result.error;
+      setIsLiked(!isLiked);
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFavorite = async () => {
+    setLoading(true);
+    try {
+      // Здесь будет вызов API для избранного
+      const result = await apiClient.getSupabase()
+        .from('generation_favorites')
+        .upsert({
+          generation_id: id,
+          user_id: (await apiClient.getCurrentUser())?.id,
+          favorited: !isFavorite
+        }, { onConflict: 'generation_id,user_id' });
+
+      if (result.error) throw result.error;
+      setIsFavorite(!isFavorite);
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -113,12 +160,12 @@ const GenerationPreview: React.FC<GenerationPreviewProps> = ({
         );
       case 'completed':
         return (
-          <div 
-            className={`absolute inset-0 flex items-center justify-center z-10 opacity-0 transition-opacity duration-300 ${
-              isHovered ? 'opacity-10' : ''
+          <div
+            className={`absolute inset-0 flex items-center justify-center z-10 ${
+              isHovered ? 'opacity-100' : 'opacity-0'
             }`}
           >
-            <PlayButton onClick={onPlay} size="large" />
+            <PlayButton onClick={onPlay} size="lg" />
           </div>
         );
       default:
@@ -127,50 +174,75 @@ const GenerationPreview: React.FC<GenerationPreviewProps> = ({
   };
 
   return (
-    <Card 
+    <div
       className="relative overflow-hidden group"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative aspect-video w-full overflow-hidden rounded-t-lg">
-        <img 
-          src={thumbnail} 
-          alt={title}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-        />
-        {renderContent()}
-        <div className="absolute top-2 left-2">
-          <Badge className={getTypeColor()}>
-            {type === 'image' ? 'Изображение' : 
-             type === 'music' ? 'Музыка' : 
-             type === 'video' ? 'Видео' : 'Текст'}
-          </Badge>
+      <Card className="relative overflow-hidden group w-full">
+        <div className="relative aspect-video w-full overflow-hidden rounded-t-lg">
+          <img 
+            src={thumbnail} 
+            alt={title}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+          {renderContent()}
+          <div className="absolute top-2 left-2">
+            <Badge className={getTypeColor()}>
+              {type === 'image' ? 'Изображение' : 
+               type === 'music' ? 'Музыка' : 
+               type === 'video' ? 'Видео' : 'Текст'}
+            </Badge>
+          </div>
+          <div className="absolute top-2 right-2">
+            <Badge className={`${getStatusColor()} text-white`}>
+              {getStatusText()}
+            </Badge>
+          </div>
         </div>
-        <div className="absolute top-2 right-2">
-          <Badge className={`${getStatusColor()} text-white`}>
-            {getStatusText()}
-          </Badge>
-        </div>
-      </div>
-      
-      <div className="p-4">
-        <h3 className="font-bold text-lg mb-1 truncate">{title}</h3>
-        <p className="text-gray-600 text-sm mb-3 line-clamp-2">{description}</p>
         
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Avatar src={creator.avatar} alt={creator.name} size="sm" />
-            <span className="text-sm font-medium">{creator.name}</span>
+        <div className="p-4">
+          <h3 className="font-bold text-lg mb-1 truncate">{title}</h3>
+          <p className="text-gray-600 text-sm mb-3 line-clamp-2">{description}</p>
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Avatar src={creator.avatar} alt={creator.name} size="sm" />
+              <span className="text-sm font-medium">{creator.name}</span>
+            </div>
+            
+            <div className="flex space-x-2">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleLike}
+                disabled={loading}
+                className={isLiked ? 'text-red-500' : 'text-gray-500'}
+              >
+                {isLiked ? '❤️' : '🤍'}
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleFavorite}
+                disabled={loading}
+                className={isFavorite ? 'text-yellow-500' : 'text-gray-500'}
+              >
+                {isFavorite ? '★' : '☆'}
+              </Button>
+            </div>
           </div>
           
           {status === 'completed' && onPlay && (
-            <Button onClick={onPlay} variant="outline" size="sm">
-              Воспроизвести
-            </Button>
+            <div className="mt-3">
+              <Button onClick={onPlay} variant="outline" size="sm" className="w-full">
+                Воспроизвести
+              </Button>
+            </div>
           )}
         </div>
-      </div>
-    </Card>
+      </Card>
+    </div>
   );
 };
 
